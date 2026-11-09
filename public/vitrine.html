@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Desapego da Nara — Vitrine</title>
+<style>
+:root{--bg:#fff8f3;--card:#fff;--tx:#2b2118;--mut:#7a6a5c;--pri:#e8590c;--bd:#f0e2d6}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1612;--card:#292019;--tx:#f5ebe0;--mut:#b5a393;--bd:#3d3027}}
+*{box-sizing:border-box}body{margin:0;font:16px system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{text-align:center;padding:28px 16px 8px}header h1{margin:0;color:var(--pri)}header p{color:var(--mut);margin:6px 0}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.chips button{border:1.5px solid var(--pri);background:transparent;color:var(--pri);border-radius:99px;padding:6px 14px;font-size:14px;cursor:pointer}
+.chips button.on{background:var(--pri);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+.card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.card .t{padding:10px 12px}.card b{display:block}.p{color:var(--pri);font-size:20px;font-weight:700}
+.m{color:var(--mut);font-size:13px}.card p{font-size:14px;margin:6px 0 0}
+</style>
+</head>
+<body>
+<header><h1>📦 Desapego da Nara</h1><p>Itens à venda — chame para combinar!</p></header>
+<main><div class="chips" id="chips"></div><div class="grid" id="g"></div></main>
+<script>
+const R$=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let all=[],cat='';
+fetch('/api/public').then(r=>r.json()).then(d=>{all=d;draw()});
+function draw(){
+  const cats=[...new Set(all.map(i=>i.categoria).filter(Boolean))];
+  document.getElementById('chips').innerHTML=['Todos',...cats].map(c=>`<button class="${(c==='Todos'?'':c)===cat?'on':''}" data-c="${c==='Todos'?'':esc(c)}">${esc(c)}</button>`).join('');
+  document.getElementById('g').innerHTML=all.filter(i=>!cat||i.categoria===cat).map(i=>`<div class="card"><img src="/img/${i.fotos[0]}" loading="lazy">
+   <div class="t"><b>${esc(i.titulo)}</b><span class="p">${i.preco!=null?R$(i.preco):'Consulte'}</span><div class="m">${esc(i.condicao)}</div><p>${esc(i.descricao)}</p></div></div>`).join('')||'<p class="m" style="text-align:center">Nada à venda no momento.</p>';
+}
+document.getElementById('chips').onclick=e=>{if(e.target.dataset.c!=null){cat=e.target.dataset.c;draw()}};
+</script>
+</body>
+</html>

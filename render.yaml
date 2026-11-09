@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: desapego-da-nara
+    runtime: node
+    plan: starter
+    buildCommand: echo ok
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    disk:
+      name: dados
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false

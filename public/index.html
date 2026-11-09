@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e8590c">
+<title>Desapego da Nara</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--bg:#fff8f3;--card:#fff;--tx:#2b2118;--mut:#7a6a5c;--pri:#e8590c;--ok:#2f9e44;--bd:#f0e2d6}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1612;--card:#292019;--tx:#f5ebe0;--mut:#b5a393;--bd:#3d3027}}
+*{box-sizing:border-box}body{margin:0;font:16px system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{position:sticky;top:0;z-index:5;background:var(--pri);color:#fff;padding:12px 16px;display:flex;gap:10px;align-items:center}
+header h1{font-size:18px;margin:0;flex:1}
+header a{color:#fff;font-size:14px}
+main{max-width:900px;margin:0 auto;padding:16px}
+button,.btn{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-size:16px;cursor:pointer;display:inline-block}
+button.sec{background:transparent;color:var(--pri);border:1.5px solid var(--pri)}
+button.danger{background:transparent;color:#c92a2a;border:1.5px solid #c92a2a}
+button:disabled{opacity:.5}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.bar input,.bar select{flex:1;min-width:120px}
+input,select,textarea{width:100%;padding:11px;border:1.5px solid var(--bd);border-radius:10px;font:inherit;background:var(--card);color:var(--tx)}
+textarea{min-height:110px;resize:vertical}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden;cursor:pointer;position:relative}
+.card img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--bd)}
+.card div{padding:8px 10px;font-size:14px}.card b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{position:absolute;top:8px;left:8px;background:#0008;color:#fff;font-size:12px;padding:2px 8px;border-radius:99px}
+.price{color:var(--ok);font-weight:700}
+dialog{border:0;border-radius:16px;padding:0;width:min(640px,96vw);max-height:94vh;background:var(--bg);color:var(--tx)}
+dialog::backdrop{background:#0008}
+.in{padding:16px}
+.photos{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.photos div{position:relative;flex:none}.photos img{height:110px;width:110px;object-fit:cover;border-radius:10px}
+.photos i{position:absolute;top:2px;right:2px;background:#000a;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;font-style:normal;line-height:22px;cursor:pointer}
+.sug{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:12px;font-size:14px}
+.sug a{color:var(--pri)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.mut{color:var(--mut);font-size:13px}
+.empty{text-align:center;color:var(--mut);padding:50px 10px}
+.spin{display:inline-block;width:16px;height:16px;border:2.5px solid #fff6;border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite;vertical-align:-3px;margin-right:6px}@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header><h1>📦 Desapego da Nara</h1><a href="vitrine.html" target="_blank">Vitrine ↗</a></header>
+<main>
+  <div class="bar">
+    <button id="novo">📷 Novo item</button>
+    <input id="q" placeholder="Buscar…">
+    <select id="fs"><option value="">Todos</option><option>Disponível</option><option>Vendido</option><option>Rascunho</option></select>
+  </div>
+  <div class="mut" id="resumo" style="margin-bottom:10px"></div>
+  <div class="grid" id="lista"></div>
+  <div class="empty" id="vazio" hidden>Nenhum item ainda.<br>Toque em <b>Novo item</b> e fotografe algo da casa!</div>
+</main>
+
+<dialog id="dlg"><div class="in">
+  <h3 id="dt" style="margin-top:0">Novo item</h3>
+  <div class="photos" id="fotos"></div>
+  <div class="bar" style="margin-top:8px">
+    <label class="btn sec" style="margin:0;color:var(--pri);border:1.5px solid var(--pri);background:transparent">📷 Tirar foto
+      <input type="file" accept="image/*" capture="environment" id="cam" hidden></label>
+    <label class="btn sec" style="margin:0;color:var(--pri);border:1.5px solid var(--pri);background:transparent">🖼️ Galeria
+      <input type="file" accept="image/*" multiple id="gal" hidden></label>
+  </div>
+  <label>Dica para a busca (opcional: marca, modelo, tempo de uso…)</label>
+  <input id="dica" placeholder="ex: Airfryer Philco 4L, usada 1 ano">
+  <button id="ia" style="width:100%;margin-top:10px">✨ Buscar na web e sugerir</button>
+  <div id="sug"></div>
+
+  <label>Título</label><input id="titulo">
+  <div class="row"><div><label>Categoria</label><input id="categoria" list="cats"></div>
+  <div><label>Cômodo / local</label><input id="local" placeholder="Sala, cozinha…"></div></div>
+  <datalist id="cats"><option>Eletrodomésticos<option>Móveis<option>Decoração<option>Roupas<option>Brinquedos<option>Cozinha<option>Eletrônicos<option>Livros<option>Outros</datalist>
+  <label>Descrição</label><textarea id="descricao"></textarea>
+  <div class="row"><div><label>Condição</label>
+    <select id="condicao"><option>Novo<option>Seminovo<option selected>Bom estado<option>Usado<option>Com detalhes</select></div>
+  <div><label>Status</label><select id="status"><option>Rascunho<option selected>Disponível<option>Vendido</select></div></div>
+  <label>Seu preço (R$)</label><input id="preco" type="number" inputmode="decimal" step="0.01" placeholder="O valor que VOCÊS decidem">
+  <div class="bar" style="margin-top:16px">
+    <button id="salvar">💾 Salvar</button>
+    <button class="sec" id="insta">📋 Legenda Instagram</button>
+    <button class="sec" id="fechar">Fechar</button>
+    <button class="danger" id="del" hidden>Excluir</button>
+  </div>
+</div></dialog>
+
+<script>
+const $=s=>document.querySelector(s);
+const R$=v=>v==null||v===''?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+let items=[],cur=null,ai=false;
+const api=(u,o={})=>fetch(u,{headers:{'Content-Type':'application/json'},...o}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||'erro');return j});
+
+async function load(){items=await api('/api/items');render();try{ai=(await api('/api/status')).ai}catch{}}
+function render(){
+  const q=$('#q').value.toLowerCase(),f=$('#fs').value;
+  const l=items.filter(i=>(!f||i.status===f)&&(!q||(i.titulo+' '+i.categoria+' '+i.local).toLowerCase().includes(q)));
+  $('#lista').innerHTML=l.map(i=>`<div class="card" data-id="${i.id}"><span class="tag">${i.status||''}</span>
+    <img src="/img/${i.fotos?.[0]||''}" loading="lazy"><div><b>${esc(i.titulo||'Sem título')}</b><span class="price">${R$(i.preco)}</span></div></div>`).join('');
+  $('#vazio').hidden=items.length>0;
+  const disp=items.filter(i=>i.status==='Disponível'),tot=disp.reduce((s,i)=>s+(+i.preco||0),0);
+  $('#resumo').textContent=items.length?`${items.length} itens · ${disp.length} à venda · ${R$(tot)} em estoque`:'';
+}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('#q').oninput=$('#fs').onchange=render;
+$('#lista').onclick=e=>{const c=e.target.closest('.card');if(c)open(items.find(i=>i.id===c.dataset.id))};
+$('#novo').onclick=()=>open(null);
+
+function open(it){
+  cur=it?{...it,fotos:[...(it.fotos||[])]}:{fotos:[],status:'Disponível',condicao:'Bom estado'};
+  $('#dt').textContent=it?'Editar item':'Novo item';
+  for(const k of ['titulo','categoria','local','descricao','condicao','status','preco'])$('#'+k).value=cur[k]??(k==='status'?'Disponível':'');
+  $('#dica').value='';$('#sug').innerHTML=cur.sug?sugHtml(cur.sug):'';$('#del').hidden=!it;
+  fotos();$('#dlg').showModal();
+}
+function fotos(){
+  $('#fotos').innerHTML=cur.fotos.map((f,n)=>`<div><img src="/img/${f}"><i data-n="${n}">×</i></div>`).join('');
+}
+$('#fotos').onclick=e=>{const n=e.target.dataset.n;if(n!=null){cur.fotos.splice(n,1);fotos()}};
+
+function shrink(file,max=1280){return new Promise(res=>{const im=new Image();im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.85))};im.src=URL.createObjectURL(file)})}
+async function add(files){
+  for(const f of files){const {name}=await api('/api/upload',{method:'POST',body:JSON.stringify({dataUrl:await shrink(f)})});cur.fotos.push(name);fotos()}
+  if(cur.fotos.length&&!$('#titulo').value&&ai)$('#ia').click();
+}
+$('#cam').onchange=e=>{add([...e.target.files]);e.target.value=''};
+$('#gal').onchange=e=>{add([...e.target.files]);e.target.value=''};
+
+function sugHtml(s){
+  return `<div class="sug"><b>Sugestão da IA</b> <span class="mut">(confiança ${esc(s.confianca||'?')})</span><br>
+  ${s.preco_novo?`Novo: ${R$(s.preco_novo)} · `:''}Usado: ${R$(s.preco_min)} – ${R$(s.preco_max)} · <b>sugerido ${R$(s.preco_sugerido)}</b><br>
+  <span class="mut">${esc(s.condicao_justificativa||'')}</span>
+  ${(s.similares||[]).length?'<br><br>Semelhantes encontrados:<ul style="margin:4px 0;padding-left:18px">'+s.similares.map(x=>`<li>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titulo||x.loja)}</a>`:esc(x.titulo)} — ${R$(x.preco)} <span class="mut">${esc(x.loja||'')}</span></li>`).join('')+'</ul>':''}</div>`;
+}
+$('#ia').onclick=async()=>{
+  if(!cur.fotos.length)return alert('Adicione ao menos uma foto.');
+  const b=$('#ia');b.disabled=true;b.innerHTML='<span class="spin"></span>Pesquisando… (até 1 min)';
+  try{
+    const s=await api('/api/analyze',{method:'POST',body:JSON.stringify({fotos:cur.fotos,dica:$('#dica').value})});
+    cur.sug=s;$('#sug').innerHTML=sugHtml(s);
+    $('#titulo').value=s.titulo||'';$('#categoria').value=s.categoria||'';$('#descricao').value=s.descricao||'';
+    if([...$('#condicao').options].some(o=>o.text===s.condicao))$('#condicao').value=s.condicao;
+    if(!$('#preco').value&&s.preco_sugerido)$('#preco').value=s.preco_sugerido;
+  }catch(e){alert('Não foi possível: '+e.message)}
+  b.disabled=false;b.textContent='✨ Buscar na web e sugerir';
+};
+
+$('#salvar').onclick=async()=>{
+  if(!cur.fotos.length)return alert('Adicione ao menos uma foto.');
+  const d={...cur};for(const k of ['titulo','categoria','local','descricao','condicao','status'])d[k]=$('#'+k).value;
+  d.preco=$('#preco').value===''?null:+$('#preco').value;
+  const s=await api(cur.id?'/api/items/'+cur.id:'/api/items',{method:cur.id?'PUT':'POST',body:JSON.stringify(d)});
+  const i=items.findIndex(x=>x.id===s.id);i<0?items.unshift(s):items[i]=s;render();$('#dlg').close();
+};
+$('#fechar').onclick=()=>$('#dlg').close();
+$('#del').onclick=async()=>{if(!confirm('Excluir este item?'))return;await api('/api/items/'+cur.id,{method:'DELETE'});items=items.filter(x=>x.id!==cur.id);render();$('#dlg').close()};
+$('#insta').onclick=async()=>{
+  const t=`${$('#titulo').value}\n\n${$('#descricao').value}\n\n✅ Condição: ${$('#condicao').value}\n💰 ${R$($('#preco').value)}\n\nChama no direct! 📩\n#desapego #brecho #${($('#categoria').value||'casa').toLowerCase().replace(/\W/g,'')} #vendo`;
+  try{await navigator.clipboard.writeText(t);alert('Legenda copiada! Cole no Instagram.')}catch{prompt('Copie a legenda:',t)}
+};
+load();
+</script>
+</body>
+</html>
