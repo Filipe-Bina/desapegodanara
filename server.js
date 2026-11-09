@@ -72,6 +72,10 @@ http.createServer(async (req, res) => {
   const p = url.pathname;
   try {
     const open = p === '/vitrine.html' || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
+    if (!PASSWORD && process.env.RENDER && !open) {
+      res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('Defina APP_PASSWORD no painel do Render para liberar o editor.');
+    }
     if (PASSWORD && !open) {
       const got = Buffer.from((req.headers.authorization || '').split(' ')[1] || '', 'base64').toString().split(':').slice(1).join(':');
       const a = Buffer.from(got), b = Buffer.from(PASSWORD);
