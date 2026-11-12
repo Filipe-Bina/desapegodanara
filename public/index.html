@@ -69,6 +69,17 @@ dialog::backdrop{background:#0008}
   <input id="dica" placeholder="ex: Airfryer Philco 4L, usada 1 ano">
   <button id="ia" style="width:100%;margin-top:10px">✨ Buscar na web e sugerir</button>
   <div id="sug"></div>
+  <div class="sug" id="busca">
+    <b>🔎 Pesquisar preços você mesmo (grátis)</b>
+    <div class="mut" style="margin:4px 0 8px">Usa o título (ou a dica). Abre a pesquisa já pronta em cada site.</div>
+    <div class="bar" style="margin:0">
+      <button class="sec" data-s="ml">Mercado Livre</button>
+      <button class="sec" data-s="olx">OLX</button>
+      <button class="sec" data-s="enjoei">Enjoei</button>
+      <button class="sec" data-s="shopee">Shopee</button>
+      <button class="sec" data-s="google">Google</button>
+    </div>
+  </div>
 
   <label>Título</label><input id="titulo">
   <div class="row"><div><label>Categoria</label><input id="categoria" list="cats"></div>
@@ -143,10 +154,18 @@ $('#ia').onclick=async()=>{
     $('#titulo').value=s.titulo||'';$('#categoria').value=s.categoria||'';$('#descricao').value=s.descricao||'';
     if([...$('#condicao').options].some(o=>o.text===s.condicao))$('#condicao').value=s.condicao;
     if(!$('#preco').value&&s.preco_sugerido)$('#preco').value=s.preco_sugerido;
-  }catch(e){alert('Não foi possível: '+e.message)}
+  }catch(e){alert('A busca automática não está disponível agora ('+e.message+'). Sem problema: preencha título, descrição e preço e use os botões "Pesquisar preços" para comparar.')}
   b.disabled=false;b.textContent='✨ Buscar na web e sugerir';
 };
 
+$('#busca').onclick=e=>{
+  const s=e.target.dataset.s;if(!s)return;
+  const q=($('#titulo').value||$('#dica').value).trim();
+  if(!q)return alert('Escreva o título (ou a dica) para pesquisar, ex: Ventilador coluna Arno 40cm.');
+  const u=encodeURIComponent(q);
+  const url={ml:'https://lista.mercadolivre.com.br/'+q.split(' ').filter(Boolean).join('-'),olx:'https://www.olx.com.br/brasil?q='+u,enjoei:'https://www.enjoei.com.br/s?q='+u,shopee:'https://shopee.com.br/search?keyword='+u,google:'https://www.google.com/search?q='+encodeURIComponent(q+' usado preço')}[s];
+  window.open(url,'_blank','noopener');
+};
 $('#salvar').onclick=async()=>{
   if(!cur.fotos.length)return alert('Adicione ao menos uma foto.');
   const d={...cur};for(const k of ['titulo','categoria','local','descricao','condicao','status'])d[k]=$('#'+k).value;
