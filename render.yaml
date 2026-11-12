@@ -13,6 +13,8 @@ services:
     envVars:
       - key: DATA_DIR
         value: /var/data
+      - key: GEMINI_API_KEY
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: APP_PASSWORD

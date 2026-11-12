@@ -9,6 +9,8 @@ const os = require('os');
 const PORT = process.env.PORT || 3000;
 const MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-5-5';
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
+const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const ROOT = __dirname;
 const PUB = path.join(ROOT, 'public');
 const DATA = process.env.DATA_DIR || path.join(ROOT, 'data');
@@ -40,8 +42,46 @@ Responda SOMENTE com JSON válido (sem markdown), neste formato:
 {"titulo":"título curto e vendedor","categoria":"ex: Eletrodomésticos, Móveis, Decoração, Roupas, Brinquedos, Cozinha, Eletrônicos, Livros, Outros","marca_modelo":"","descricao":"descrição atraente em português, 2 a 4 frases, citando medidas/cor/material só se visíveis; não invente defeitos nem funcionalidades","condicao":"Novo | Seminovo | Bom estado | Usado | Com detalhes","condicao_justificativa":"uma frase","preco_novo":número ou null,"preco_min":número,"preco_sugerido":número,"preco_max":número,"confianca":"alta | média | baixa","similares":[{"titulo":"","preco":número ou null,"loja":"","url":""}]}
 Seja honesto: se a foto não permitir identificar bem, diga confiança baixa. Use no máximo 6 similares, só com URLs reais encontradas na busca.`;
 
+function parseJson(text) {
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  if (a < 0 || b < a) throw new Error('Resposta da IA sem JSON.');
+  return JSON.parse(text.slice(a, b + 1));
+}
+
+function readImages(files) {
+  return files.slice(0, 4).map((f) => path.join(IMGS, path.basename(f))).filter((p) => fs.existsSync(p)).map((p) => fs.readFileSync(p).toString('base64'));
+}
+
+async function analyzeGemini(files, hint) {
+  const imgs = readImages(files);
+  if (!imgs.length) throw new Error('Sem imagens.');
+  const parts = imgs.map((data) => ({ inline_data: { mime_type: 'image/jpeg', data } }));
+  parts.push({ text: PROMPT + (hint ? ' Dica do dono sobre o item: ' + hint : '') });
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent', {
+    method: 'POST',
+    headers: { 'x-goog-api-key': GEMINI_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify({ contents: [{ role: 'user', parts }], tools: [{ google_search: {} }] }),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || 'Erro na API do Gemini');
+  const cand = j.candidates?.[0];
+  const text = (cand?.content?.parts || []).map((p) => p.text || '').join('');
+  const out = parseJson(text);
+  // links escritos pelo modelo podem ser inventados: usa só as fontes reais da busca
+  out.similares = (out.similares || []).map((x) => ({ ...x, url: '' }));
+  for (const c of (cand?.groundingMetadata?.groundingChunks || []).slice(0, 6)) {
+    if (c.web?.uri) out.similares.push({ titulo: c.web.title || 'Fonte', preco: null, loja: 'fonte da busca', url: c.web.uri });
+  }
+  return out;
+}
+
 async function analyze(files, hint) {
-  if (!API_KEY) throw Object.assign(new Error('Defina ANTHROPIC_API_KEY para ativar a busca automática.'), { code: 501 });
+  if (GEMINI_KEY) return analyzeGemini(files, hint);
+  return analyzeClaude(files, hint);
+}
+
+async function analyzeClaude(files, hint) {
+  if (!API_KEY) throw Object.assign(new Error('Defina GEMINI_API_KEY (gratuito) ou ANTHROPIC_API_KEY para ativar a busca automática.'), { code: 501 });
   const content = [];
   for (const f of files.slice(0, 4)) {
     const p = path.join(IMGS, path.basename(f));
@@ -83,7 +123,7 @@ http.createServer(async (req, res) => {
     }
     if (p === '/healthz') return send(res, 200, { ok: 1 });
     if (p === '/api/public') return send(res, 200, readDB().filter((i) => i.status === 'Disponível').map(({ id, titulo, categoria, descricao, condicao, preco, fotos }) => ({ id, titulo, categoria, descricao, condicao, preco, fotos })));
-    if (p === '/api/status') return send(res, 200, { ai: !!API_KEY });
+    if (p === '/api/status') return send(res, 200, { ai: !!(GEMINI_KEY || API_KEY) });
     if (p === '/api/items' && req.method === 'GET') return send(res, 200, readDB());
     if (p === '/api/items' && req.method === 'POST') {
       const it = await body(req); it.id = crypto.randomUUID(); it.criado = Date.now();
@@ -123,5 +163,5 @@ http.createServer(async (req, res) => {
 }).listen(PORT, '0.0.0.0', () => {
   console.log(`\nDesapego da Nara rodando!\n  Neste PC:  http://localhost:${PORT}`);
   for (const l of Object.values(os.networkInterfaces()).flat()) if (l.family === 'IPv4' && !l.internal) console.log(`  No celular (mesmo Wi-Fi): http://${l.address}:${PORT}`);
-  console.log(API_KEY ? '  IA: ativada\n' : '  IA: DESATIVADA (defina ANTHROPIC_API_KEY)\n');
+  console.log(GEMINI_KEY ? `  IA: Gemini (${GEMINI_MODEL})\n` : API_KEY ? '  IA: Claude\n' : '  IA: DESATIVADA (defina GEMINI_API_KEY ou ANTHROPIC_API_KEY)\n');
 });

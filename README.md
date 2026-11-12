@@ -4,12 +4,13 @@ Catálogo de itens da casa por foto, com busca automática de produtos semelhant
 
 ## Como usar
 
-1. Instale o Node 18+ e pegue uma chave em https://console.anthropic.com
+1. Instale o Node 18+ e pegue uma chave **gratuita** do Gemini em https://aistudio.google.com (ou, alternativamente, uma da Anthropic em https://console.anthropic.com).
 2. No PowerShell, dentro desta pasta:
    ```powershell
-   $env:ANTHROPIC_API_KEY="sua-chave"
+   $env:GEMINI_API_KEY="sua-chave"
    node server.js
    ```
+   Se existirem as duas chaves, o Gemini é usado. `GEMINI_MODEL` troca o modelo (padrão `gemini-2.5-flash`).
 3. Abra o endereço `http://localhost:3000` no PC. O terminal também mostra o endereço para abrir **no celular** (mesmo Wi-Fi), onde o botão "Tirar foto" abre a câmera.
 
 Sem a chave o app funciona como catálogo manual; só a busca automática fica desativada.
