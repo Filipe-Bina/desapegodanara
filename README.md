@@ -10,7 +10,7 @@ Catálogo de itens da casa por foto, com busca automática de produtos semelhant
    $env:GEMINI_API_KEY="sua-chave"
    node server.js
    ```
-   Se existirem as duas chaves, o Gemini é usado. `GEMINI_MODEL` troca o modelo (padrão `gemini-2.5-flash`).
+   Se existirem as duas chaves, o Gemini é usado. `GEMINI_MODEL` troca o modelo (padrão `gemini-3.8-flash`).
 3. Abra o endereço `http://localhost:3000` no PC. O terminal também mostra o endereço para abrir **no celular** (mesmo Wi-Fi), onde o botão "Tirar foto" abre a câmera.
 
 Sem a chave o app funciona como catálogo manual; só a busca automática fica desativada.
