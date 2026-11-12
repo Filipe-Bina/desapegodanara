@@ -116,10 +116,10 @@ function render(){
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 $('#q').oninput=$('#fs').onchange=render;
-$('#lista').onclick=e=>{const c=e.target.closest('.card');if(c)open(items.find(i=>i.id===c.dataset.id))};
-$('#novo').onclick=()=>open(null);
+$('#lista').onclick=e=>{const c=e.target.closest('.card');if(c)abrirItem(items.find(i=>i.id===c.dataset.id))};
+$('#novo').onclick=()=>abrirItem(null);
 
-function open(it){
+function abrirItem(it){
   cur=it?{...it,fotos:[...(it.fotos||[])]}:{fotos:[],status:'Disponível',condicao:'Bom estado'};
   $('#dt').textContent=it?'Editar item':'Novo item';
   for(const k of ['titulo','categoria','local','descricao','condicao','status','preco'])$('#'+k).value=cur[k]??(k==='status'?'Disponível':'');
