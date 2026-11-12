@@ -52,26 +52,45 @@ function readImages(files) {
   return files.slice(0, 4).map((f) => path.join(IMGS, path.basename(f))).filter((p) => fs.existsSync(p)).map((p) => fs.readFileSync(p).toString('base64'));
 }
 
+async function callGemini(parts, withSearch) {
+  const body = { contents: [{ role: 'user', parts }] };
+  if (withSearch) body.tools = [{ google_search: {} }];
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent', {
+    method: 'POST',
+    headers: { 'x-goog-api-key': GEMINI_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json();
+  if (!r.ok) throw Object.assign(new Error(j.error?.message || 'Erro na API do Gemini'), { quota: r.status === 429 });
+  return j.candidates?.[0];
+}
+
 async function analyzeGemini(files, hint) {
   const imgs = readImages(files);
   if (!imgs.length) throw new Error('Sem imagens.');
   const parts = imgs.map((data) => ({ inline_data: { mime_type: 'image/jpeg', data } }));
-  parts.push({ text: PROMPT + (hint ? ' Dica do dono sobre o item: ' + hint : '') });
-  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent', {
-    method: 'POST',
-    headers: { 'x-goog-api-key': GEMINI_KEY, 'content-type': 'application/json' },
-    body: JSON.stringify({ contents: [{ role: 'user', parts }], tools: [{ google_search: {} }] }),
-  });
-  const j = await r.json();
-  if (!r.ok) throw new Error(j.error?.message || 'Erro na API do Gemini');
-  const cand = j.candidates?.[0];
+  const dica = hint ? ' Dica do dono sobre o item: ' + hint : '';
+  parts.push({ text: PROMPT + dica });
+  let cand, semBusca = false;
+  try {
+    cand = await callGemini(parts, true);
+  } catch (e) {
+    if (!e.quota) throw e;
+    // cota da pesquisa na web esgotada: tenta de novo só com a foto
+    semBusca = true;
+    parts[parts.length - 1] = { text: PROMPT + dica + ' ATENÇÃO: a busca na web está indisponível agora. Estime com base no seu conhecimento, use confianca "baixa" ou "média" e deixe "similares" vazio.' };
+    try { cand = await callGemini(parts, false); } catch (e2) {
+      throw new Error(e2.quota ? 'Limite gratuito do Gemini atingido. Tente de novo em alguns minutos.' : e2.message);
+    }
+  }
   const text = (cand?.content?.parts || []).map((p) => p.text || '').join('');
   const out = parseJson(text);
   // links escritos pelo modelo podem ser inventados: usa só as fontes reais da busca
-  out.similares = (out.similares || []).map((x) => ({ ...x, url: '' }));
+  out.similares = semBusca ? [] : (out.similares || []).map((x) => ({ ...x, url: '' }));
   for (const c of (cand?.groundingMetadata?.groundingChunks || []).slice(0, 6)) {
     if (c.web?.uri) out.similares.push({ titulo: c.web.title || 'Fonte', preco: null, loja: 'fonte da busca', url: c.web.uri });
   }
+  if (semBusca) out.aviso = 'Busca na web indisponível (limite gratuito). Preço estimado pelo modelo, sem anúncios de comparação.';
   return out;
 }
 
@@ -111,7 +130,7 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
   try {
-    const open = p === '/vitrine.html' || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
+    const open = p === '/vitrine.html' || p === '/manifest.webmanifest' || p === '/favicon.ico' || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
     if (!PASSWORD && process.env.RENDER && !open) {
       res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Defina APP_PASSWORD no painel do Render para liberar o editor.');

@@ -131,7 +131,7 @@ $('#gal').onchange=e=>{add([...e.target.files]);e.target.value=''};
 function sugHtml(s){
   return `<div class="sug"><b>Sugestão da IA</b> <span class="mut">(confiança ${esc(s.confianca||'?')})</span><br>
   ${s.preco_novo?`Novo: ${R$(s.preco_novo)} · `:''}Usado: ${R$(s.preco_min)} – ${R$(s.preco_max)} · <b>sugerido ${R$(s.preco_sugerido)}</b><br>
-  <span class="mut">${esc(s.condicao_justificativa||'')}</span>
+  <span class="mut">${esc(s.condicao_justificativa||'')}</span>${s.aviso?`<br><b style="color:#c92a2a">⚠ ${esc(s.aviso)}</b>`:''}
   ${(s.similares||[]).length?'<br><br>Semelhantes encontrados:<ul style="margin:4px 0;padding-left:18px">'+s.similares.map(x=>`<li>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titulo||x.loja)}</a>`:esc(x.titulo)} — ${R$(x.preco)} <span class="mut">${esc(x.loja||'')}</span></li>`).join('')+'</ul>':''}</div>`;
 }
 $('#ia').onclick=async()=>{
