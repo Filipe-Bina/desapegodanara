@@ -11,6 +11,8 @@ const MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-5-5';
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const OR_KEY = process.env.OPENROUTER_API_KEY || '';
+const OR_MODEL = process.env.OPENROUTER_MODEL || '';
 const ROOT = __dirname;
 const PUB = path.join(ROOT, 'public');
 const DATA = process.env.DATA_DIR || path.join(ROOT, 'data');
@@ -97,9 +99,61 @@ async function analyzeGemini(files, hint) {
   return out;
 }
 
+// OpenRouter: usa modelos gratuitos com imagem. A lista pública muda toda hora, então é consultada em vez de fixada.
+let orCache = { t: 0, ids: [] };
+async function orFreeModels() {
+  if (orCache.ids.length && Date.now() - orCache.t < 3600e3) return orCache.ids;
+  try {
+    const j = await (await fetch('https://openrouter.ai/api/v1/models')).json();
+    const ids = j.data
+      .filter((m) => Number(m.pricing?.prompt) === 0 && Number(m.pricing?.completion) === 0
+        && (m.architecture?.input_modalities || []).includes('image')
+        && (m.architecture?.output_modalities || []).join() === 'text')
+      .map((m) => m.id).filter((id) => id !== 'openrouter/free');
+    orCache = { t: Date.now(), ids };
+  } catch { /* usa a lista anterior, se houver */ }
+  return orCache.ids;
+}
+
+async function analyzeOpenRouter(files, hint) {
+  const imgs = readImages(files);
+  if (!imgs.length) throw new Error('Sem imagens.');
+  const dica = hint ? ' Dica do dono sobre o item: ' + hint : '';
+  const aviso = ' ATENÇÃO: você não tem acesso à web agora. Estime com base no seu conhecimento, use confianca "baixa" ou "média" e deixe "similares" vazio. Responda só o JSON.';
+  const content = imgs.map((d) => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } }));
+  content.push({ type: 'text', text: PROMPT + dica + aviso });
+  const candidates = [...new Set([OR_MODEL, 'openrouter/free', ...(await orFreeModels())].filter(Boolean))].slice(0, 4);
+  let last;
+  for (const model of candidates) {
+    try {
+      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + OR_KEY, 'content-type': 'application/json', 'X-Title': 'Desapego da Nara' },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content }], max_tokens: 1500 }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error?.message || 'Erro no OpenRouter');
+      const out = parseJson(j.choices?.[0]?.message?.content || '');
+      out.similares = [];
+      out.aviso = 'Preço estimado pela IA, sem busca na web. Confira com os botões de pesquisa.';
+      return out;
+    } catch (e) { last = e; }
+  }
+  throw last || new Error('Nenhum modelo gratuito disponível agora.');
+}
+
+// tenta cada IA configurada, na ordem; se uma falhar (cota, saldo), passa para a próxima
 async function analyze(files, hint) {
-  if (GEMINI_KEY) return analyzeGemini(files, hint);
-  return analyzeClaude(files, hint);
+  const provs = [];
+  if (GEMINI_KEY) provs.push(analyzeGemini);
+  if (OR_KEY) provs.push(analyzeOpenRouter);
+  if (API_KEY) provs.push(analyzeClaude);
+  if (!provs.length) throw Object.assign(new Error('Defina GEMINI_API_KEY, OPENROUTER_API_KEY ou ANTHROPIC_API_KEY.'), { code: 501 });
+  let first;
+  for (const p of provs) {
+    try { return await p(files, hint); } catch (e) { first = first || e; }
+  }
+  throw first;
 }
 
 async function analyzeClaude(files, hint) {
@@ -156,7 +210,7 @@ http.createServer(async (req, res) => {
       fs.writeFileSync(CFG, JSON.stringify(cfg, null, 2));
       return send(res, 200, cfg);
     }
-    if (p === '/api/status') return send(res, 200, { ai: !!(GEMINI_KEY || API_KEY) });
+    if (p === '/api/status') return send(res, 200, { ai: !!(GEMINI_KEY || OR_KEY || API_KEY) });
     if (p === '/api/items' && req.method === 'GET') return send(res, 200, readDB());
     if (p === '/api/items' && req.method === 'POST') {
       const it = await body(req); it.id = crypto.randomUUID(); it.criado = Date.now();
@@ -198,5 +252,6 @@ http.createServer(async (req, res) => {
 }).listen(PORT, '0.0.0.0', () => {
   console.log(`\nDesapego da Nara rodando!\n  Neste PC:  http://localhost:${PORT}`);
   for (const l of Object.values(os.networkInterfaces()).flat()) if (l.family === 'IPv4' && !l.internal) console.log(`  No celular (mesmo Wi-Fi): http://${l.address}:${PORT}`);
-  console.log(GEMINI_KEY ? `  IA: Gemini (${GEMINI_MODEL})\n` : API_KEY ? '  IA: Claude\n' : '  IA: DESATIVADA (defina GEMINI_API_KEY ou ANTHROPIC_API_KEY)\n');
+  const ias = [GEMINI_KEY && `Gemini (${GEMINI_MODEL})`, OR_KEY && 'OpenRouter (modelos gratuitos)', API_KEY && 'Claude'].filter(Boolean);
+  console.log(ias.length ? `  IA: ${ias.join(' > ')}\n` : '  IA: DESATIVADA (defina GEMINI_API_KEY, OPENROUTER_API_KEY ou ANTHROPIC_API_KEY)\n');
 });
