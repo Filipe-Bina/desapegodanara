@@ -2,39 +2,183 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Desapego da Nara — Vitrine</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161412" media="(prefers-color-scheme: dark)">
+<title>Vitrine</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
 <style>
-:root{--bg:#fff8f3;--card:#fff;--tx:#2b2118;--mut:#7a6a5c;--pri:#e8590c;--bd:#f0e2d6}
-@media(prefers-color-scheme:dark){:root{--bg:#1c1612;--card:#292019;--tx:#f5ebe0;--mut:#b5a393;--bd:#3d3027}}
-*{box-sizing:border-box}body{margin:0;font:16px system-ui,sans-serif;background:var(--bg);color:var(--tx)}
-header{text-align:center;padding:28px 16px 8px}header h1{margin:0;color:var(--pri)}header p{color:var(--mut);margin:6px 0}
-main{max-width:1000px;margin:0 auto;padding:16px}
-.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
-.chips button{border:1.5px solid var(--pri);background:transparent;color:var(--pri);border-radius:99px;padding:6px 14px;font-size:14px;cursor:pointer}
-.chips button.on{background:var(--pri);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden}
-.card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
-.card .t{padding:10px 12px}.card b{display:block}.p{color:var(--pri);font-size:20px;font-weight:700}
-.m{color:var(--mut);font-size:13px}.card p{font-size:14px;margin:6px 0 0}
+:root{
+  --bg:#faf8f5;--surface:#fff;--text:#1d1a17;--muted:#6f665d;--line:#e9e3db;--soft:#f3eee8;
+  --accent:#c2410c;--accent-ink:#fff;--target:44px;
+  color-scheme:light dark;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#161412;--surface:#1f1c19;--text:#f3eee8;--muted:#a39a90;--line:#322d28;--soft:#2a2622;--accent:#ff8a4c;--accent-ink:#1a0e05}
+}
+@media (pointer:fine){:root{--target:40px}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-size:16px;line-height:1.45;overflow-wrap:anywhere}
+h1,h2{text-wrap:balance;margin:0}
+p{text-wrap:pretty}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wrap{max-width:1000px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left))}
+header{padding:max(32px,env(safe-area-inset-top)) 0 8px;text-align:center}
+header img{width:56px;height:56px;border-radius:16px}
+header h1{font-size:28px;letter-spacing:-.02em;margin-top:12px}
+header p{margin:6px 0 0;color:var(--muted)}
+.search{position:relative;margin-top:20px}
+.search svg{position:absolute;left:14px;top:50%;translate:0 -50%;color:var(--muted);pointer-events:none}
+.search input{width:100%;min-block-size:48px;padding:0 14px 0 44px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.scroller{display:flex;gap:8px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+.scroller::-webkit-scrollbar{display:none}
+.pill{flex:none;min-block-size:var(--target);padding:0 16px;border:1px solid var(--line);border-radius:99px;background:var(--surface);white-space:nowrap}
+.pill[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px}
+@media (min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:820px){.grid{grid-template-columns:repeat(4,1fr)}}
+.card{display:flex;flex-direction:column;padding:0;border:0;background:transparent;text-align:left;border-radius:16px}
+.card .ph{display:block;aspect-ratio:1;border-radius:16px;overflow:hidden;background:var(--soft)}
+.card img{width:100%;height:100%;object-fit:cover;display:block;transition:scale .25s}
+@media (hover:hover){.card:hover img{scale:1.04}}
+.card .meta{padding:8px 2px 0;display:flex;flex-direction:column}
+.card .t{font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .p{font-weight:650;color:var(--accent);margin-top:2px}
+.empty{text-align:center;color:var(--muted);padding:56px 12px}
+.empty h2{color:var(--text);font-size:20px;margin-bottom:6px}
+footer{text-align:center;color:var(--muted);font-size:13px;margin-top:40px}
+
+dialog{border:0;padding:0;color:var(--text);background:var(--surface);width:100%;max-width:560px;max-height:94vh;max-height:94dvh;margin:auto auto 0;border-radius:22px 22px 0 0;overflow:hidden}
+dialog[open]{display:flex;flex-direction:column}
+@media (min-width:640px){dialog{margin:auto;border-radius:22px;max-height:90vh}}
+dialog:modal{overscroll-behavior:contain}
+dialog::backdrop{background:rgb(0 0 0/.55);backdrop-filter:blur(2px);overflow:hidden;overscroll-behavior:contain}
+.dsc{overflow:auto;flex:1}
+.gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;background:var(--soft);scrollbar-width:none}
+.gal::-webkit-scrollbar{display:none}
+.gal img{flex:none;inline-size:100%;aspect-ratio:1;object-fit:cover;scroll-snap-align:center}
+.dots{display:flex;justify-content:center;gap:6px;padding:10px 0 0}
+.dots i{inline-size:7px;block-size:7px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--accent)}
+.info{padding:14px 20px 20px;display:flex;flex-direction:column;gap:8px}
+.info h2{font-size:22px}
+.price{font-size:28px;font-weight:700;color:var(--accent)}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:13px;padding:3px 12px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.desc{white-space:pre-line;margin:4px 0 0}
+.close{position:absolute;top:12px;right:12px;inline-size:var(--target);block-size:var(--target);display:grid;place-items:center;border:0;border-radius:50%;background:rgb(0 0 0/.55);color:#fff;z-index:2;padding:0}
+.act{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1 1 auto;min-block-size:48px;padding:0 20px;border:1px solid transparent;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none}
+.btn.wa{background:#1fa855;color:#fff;flex:2 1 180px}
+.btn.sec{background:transparent;color:var(--text);border-color:var(--line)}
+#toast{position:fixed;inset:auto auto max(24px,env(safe-area-inset-bottom)) 50%;translate:-50% 0;margin:0;padding:12px 18px;border:0;border-radius:14px;background:var(--text);color:var(--bg);font-size:15px}
 </style>
 </head>
 <body>
-<header><h1>📦 Desapego da Nara</h1><p>Itens à venda — chame para combinar!</p></header>
-<main><div class="chips" id="chips"></div><div class="grid" id="g"></div></main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M4 20l1.2-4A8 8 0 1 1 8 18.8z"/><path d="M9 9c0 3 3 6 6 6l1.2-1.4-2-1-1 .6c-1-.4-1.8-1.2-2.2-2.2l.6-1-1-2z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header>
+    <img src="/icon.svg" alt="" width="56" height="56">
+    <h1 id="nome">Vitrine</h1>
+    <p id="sub">Itens à venda. Toque em um item para ver os detalhes.</p>
+  </header>
+  <div class="search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar item" aria-label="Buscar item" autocomplete="off"></div>
+  <div class="scroller" id="cats" role="group" aria-label="Categorias"></div>
+  <main><div class="grid" id="g"></div><div class="empty" id="vazio" hidden></div></main>
+  <footer id="foot"></footer>
+</div>
+
+<dialog id="dlg" aria-labelledby="d-t" closedby="any">
+  <button class="close" type="button" id="d-x" aria-label="Fechar"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+  <div class="dsc">
+    <div class="gal" id="d-gal"></div>
+    <div class="dots" id="d-dots" aria-hidden="true"></div>
+    <div class="info">
+      <h2 id="d-t"></h2>
+      <div class="price" id="d-p"></div>
+      <div class="tags" id="d-tags"></div>
+      <p class="desc" id="d-d"></p>
+    </div>
+  </div>
+  <div class="act">
+    <a class="btn wa" id="d-wa" href="#" target="_blank" rel="noopener" hidden><svg class="i" aria-hidden="true"><use href="#i-wa"/></svg>Tenho interesse</a>
+    <button class="btn sec" id="d-sh" type="button"><svg class="i" aria-hidden="true"><use href="#i-share"/></svg>Compartilhar</button>
+  </div>
+</dialog>
+<div id="toast" popover="manual" role="status" aria-live="polite"></div>
+
 <script>
-const R$=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let all=[],cat='';
-fetch('/api/public').then(r=>r.json()).then(d=>{all=d;draw()});
+const $=s=>document.querySelector(s);
+const R$=v=>v==null||v===''?'Consulte':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const thumb=n=>n.replace('.jpg','.t.jpg');
+const waNum=n=>n.length<=11?'55'+n:n;
+let all=[],cfg={nome:'Vitrine',whatsapp:'',cidade:''},cat='',q='',cur=null;
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;try{t.hidePopover()}catch{}try{t.showPopover()}catch{t.style.display='block'}clearTimeout(tt);tt=setTimeout(()=>{try{t.hidePopover()}catch{}t.style.display=''},2800)}
+
+fetch('/api/public').then(r=>r.json()).then(d=>{
+  all=d.items||[];cfg=d.config||cfg;
+  $('#nome').textContent=cfg.nome||'Vitrine';document.title=(cfg.nome||'Vitrine')+' · Vitrine';
+  if(cfg.cidade)$('#foot').textContent='Retirada em '+cfg.cidade;
+  draw();
+  const id=location.hash.slice(1);const it=all.find(i=>i.id===id);if(it)abrir(it);
+}).catch(()=>{$('#vazio').hidden=false;$('#vazio').innerHTML='<h2>Não foi possível carregar</h2><p>Tente de novo em instantes.</p>'});
+
 function draw(){
   const cats=[...new Set(all.map(i=>i.categoria).filter(Boolean))];
-  document.getElementById('chips').innerHTML=['Todos',...cats].map(c=>`<button class="${(c==='Todos'?'':c)===cat?'on':''}" data-c="${c==='Todos'?'':esc(c)}">${esc(c)}</button>`).join('');
-  document.getElementById('g').innerHTML=all.filter(i=>!cat||i.categoria===cat).map(i=>`<div class="card"><img src="/img/${i.fotos[0]}" loading="lazy">
-   <div class="t"><b>${esc(i.titulo)}</b><span class="p">${i.preco!=null?R$(i.preco):'Consulte'}</span><div class="m">${esc(i.condicao)}</div><p>${esc(i.descricao)}</p></div></div>`).join('')||'<p class="m" style="text-align:center">Nada à venda no momento.</p>';
+  $('#cats').hidden=cats.length<2;
+  $('#cats').innerHTML=['',...cats].map(c=>`<button type="button" class="pill" data-c="${esc(c)}" aria-pressed="${cat===c}">${c?esc(c):'Todos'}</button>`).join('');
+  const l=all.filter(i=>(!cat||i.categoria===cat)&&(!q||[i.titulo,i.categoria,i.descricao].join(' ').toLowerCase().includes(q)));
+  $('#g').innerHTML=l.map(i=>`<button type="button" class="card" data-id="${i.id}"><span class="ph"><img src="/img/${esc(thumb(i.fotos[0]))}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/img/${esc(i.fotos[0])}'"></span><span class="meta"><span class="t">${esc(i.titulo)}</span><span class="p">${R$(i.preco)}</span></span></button>`).join('');
+  const v=$('#vazio');
+  v.hidden=l.length>0;
+  v.innerHTML=all.length?'<h2>Nada encontrado</h2><p>Tente outra busca.</p>':'<h2>Nenhum item à venda agora</h2><p>Volte em breve!</p>';
 }
-document.getElementById('chips').onclick=e=>{if(e.target.dataset.c!=null){cat=e.target.dataset.c;draw()}};
+$('#cats').onclick=e=>{const b=e.target.closest('[data-c]');if(b){cat=b.dataset.c;draw()}};
+$('#q').oninput=e=>{q=e.target.value.toLowerCase();draw()};
+$('#g').onclick=e=>{const c=e.target.closest('.card');if(c)abrir(all.find(i=>i.id===c.dataset.id))};
+
+function abrir(it){
+  cur=it;
+  $('#d-t').textContent=it.titulo;$('#d-p').textContent=R$(it.preco);$('#d-d').textContent=it.descricao||'';
+  $('#d-tags').innerHTML=[it.condicao,it.categoria].filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+  $('#d-gal').innerHTML=it.fotos.map((f,n)=>`<img src="/img/${esc(f)}" alt="${esc(it.titulo)} - foto ${n+1}" ${n?'loading="lazy"':''}>`).join('');
+  $('#d-gal').scrollLeft=0;
+  $('#d-dots').innerHTML=it.fotos.length>1?it.fotos.map((_,n)=>`<i class="${n?'':'on'}"></i>`).join(''):'';
+  const wa=$('#d-wa');
+  if(cfg.whatsapp){wa.hidden=false;wa.href='https://wa.me/'+waNum(cfg.whatsapp)+'?text='+encodeURIComponent('Olá! Tenho interesse em: '+it.titulo+' ('+R$(it.preco)+'). '+location.origin+'/vitrine.html#'+it.id)}else wa.hidden=true;
+  history.replaceState(null,'','#'+it.id);
+  $('#dlg').showModal();
+}
+$('#d-gal').addEventListener('scroll',e=>{const g=e.target,n=Math.round(g.scrollLeft/g.clientWidth);[...$('#d-dots').children].forEach((d,i)=>d.classList.toggle('on',i===n))},{passive:true});
+$('#d-x').onclick=()=>$('#dlg').close();
+$('#dlg').addEventListener('close',()=>history.replaceState(null,'',location.pathname));
+$('#d-sh').onclick=async()=>{
+  const url=location.origin+'/vitrine.html#'+cur.id;
+  if(navigator.share){try{await navigator.share({title:cur.titulo,text:cur.titulo+' - '+R$(cur.preco),url});return}catch(e){if(e.name==='AbortError')return}}
+  try{await navigator.clipboard.writeText(url);toast('Link copiado')}catch{toast(url)}
+};
+if(!('closedBy' in HTMLDialogElement.prototype)){
+  const d=$('#dlg');
+  d.addEventListener('click',e=>{
+    if(e.target!==d)return;
+    const r=d.getBoundingClientRect();
+    if(!(r.top<=e.clientY&&e.clientY<=r.top+r.height&&r.left<=e.clientX&&e.clientX<=r.left+r.width))d.close();
+  });
+}
 </script>
 </body>
 </html>

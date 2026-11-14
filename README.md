@@ -15,6 +15,12 @@ Catálogo de itens da casa por foto, com busca automática de produtos semelhant
 
 Sem a chave o app funciona como catálogo manual; só a busca automática fica desativada.
 
+## Divulgação
+
+- Em **Configurações** (ícone de ajustes) vocês colocam o WhatsApp de contato, a cidade de retirada e o nome da vitrine.
+- Em cada item, **Compartilhar** gera um card com foto, título e preço (para o Instagram) e uma legenda pronta. No celular, o WhatsApp envia as fotos com a legenda.
+- A **vitrine** (`/vitrine.html`) tem um botão "Tenho interesse" que abre o WhatsApp já com o nome do item. Cada item tem link próprio (`/vitrine.html#id`).
+
 ## Fluxo
 
 Novo item → fotos → **Buscar na web e sugerir** (título, descrição, condição, faixa de preço e anúncios semelhantes) → ajustam o que quiserem → **seu preço** → Salvar.

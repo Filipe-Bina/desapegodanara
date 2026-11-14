@@ -22,6 +22,9 @@ if (!fs.existsSync(DB)) fs.writeFileSync(DB, '[]');
 
 const readDB = () => JSON.parse(fs.readFileSync(DB, 'utf8'));
 const writeDB = (d) => fs.writeFileSync(DB, JSON.stringify(d, null, 2));
+const CFG = path.join(DATA, 'config.json');
+const readCfg = () => { try { return { nome: 'Desapego da Nara', whatsapp: '', cidade: '', ...JSON.parse(fs.readFileSync(CFG, 'utf8')) }; } catch { return { nome: 'Desapego da Nara', whatsapp: '', cidade: '' }; } };
+const onlyDigits = (s) => String(s || '').split('').filter((c) => c >= '0' && c <= '9').join('');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
 
 function body(req, limit = 40e6) {
@@ -130,7 +133,7 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
   try {
-    const open = p === '/vitrine.html' || p === '/manifest.webmanifest' || p === '/favicon.ico' || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
+    const open = p === '/vitrine.html' || p === '/manifest.webmanifest' || p === '/favicon.ico' || p === '/icon.svg' || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
     if (!PASSWORD && process.env.RENDER && !open) {
       res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Defina APP_PASSWORD no painel do Render para liberar o editor.');
@@ -141,7 +144,18 @@ http.createServer(async (req, res) => {
       if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Desapego"' }); return res.end('Senha necessaria'); }
     }
     if (p === '/healthz') return send(res, 200, { ok: 1 });
-    if (p === '/api/public') return send(res, 200, readDB().filter((i) => i.status === 'Disponível').map(({ id, titulo, categoria, descricao, condicao, preco, fotos }) => ({ id, titulo, categoria, descricao, condicao, preco, fotos })));
+    if (p === '/api/public') {
+      const { nome, whatsapp, cidade } = readCfg();
+      const items = readDB().filter((i) => i.status === 'Disponível').map(({ id, titulo, categoria, descricao, condicao, preco, fotos }) => ({ id, titulo, categoria, descricao, condicao, preco, fotos }));
+      return send(res, 200, { config: { nome, whatsapp, cidade }, items });
+    }
+    if (p === '/api/config' && req.method === 'GET') return send(res, 200, readCfg());
+    if (p === '/api/config' && req.method === 'PUT') {
+      const b = await body(req);
+      const cfg = { nome: String(b.nome || 'Desapego da Nara').slice(0, 60), whatsapp: onlyDigits(b.whatsapp).slice(0, 15), cidade: String(b.cidade || '').slice(0, 60) };
+      fs.writeFileSync(CFG, JSON.stringify(cfg, null, 2));
+      return send(res, 200, cfg);
+    }
     if (p === '/api/status') return send(res, 200, { ai: !!(GEMINI_KEY || API_KEY) });
     if (p === '/api/items' && req.method === 'GET') return send(res, 200, readDB());
     if (p === '/api/items' && req.method === 'POST') {
@@ -153,13 +167,15 @@ http.createServer(async (req, res) => {
       const db = readDB(); const i = db.findIndex((x) => x.id === mi[1]);
       if (i < 0) return send(res, 404, { error: 'não encontrado' });
       if (req.method === 'PUT') { db[i] = { ...db[i], ...(await body(req)), id: mi[1] }; writeDB(db); return send(res, 200, db[i]); }
-      if (req.method === 'DELETE') { db.splice(i, 1)[0].fotos?.forEach((f) => fs.rmSync(path.join(IMGS, path.basename(f)), { force: true })); writeDB(db); return send(res, 200, { ok: 1 }); }
+      if (req.method === 'DELETE') { db.splice(i, 1)[0].fotos?.forEach((f) => { const b = path.basename(f); fs.rmSync(path.join(IMGS, b), { force: true }); fs.rmSync(path.join(IMGS, b.replace('.jpg', '.t.jpg')), { force: true }); }); writeDB(db); return send(res, 200, { ok: 1 }); }
     }
     if (p === '/api/upload' && req.method === 'POST') {
-      const { dataUrl } = await body(req);
+      const { dataUrl, thumb } = await body(req);
       const b64 = String(dataUrl).split(',')[1]; if (!b64) throw new Error('imagem inválida');
       const name = crypto.randomUUID() + '.jpg';
       fs.writeFileSync(path.join(IMGS, name), Buffer.from(b64, 'base64'));
+      const tb = thumb ? String(thumb).split(',')[1] : '';
+      if (tb) fs.writeFileSync(path.join(IMGS, name.replace('.jpg', '.t.jpg')), Buffer.from(tb, 'base64'));
       return send(res, 200, { name });
     }
     if (p === '/api/analyze' && req.method === 'POST') {
