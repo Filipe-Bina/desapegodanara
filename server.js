@@ -187,7 +187,7 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
   try {
-    const open = p === '/vitrine.html' || p === '/manifest.webmanifest' || p === '/favicon.ico' || p === '/icon.svg' || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
+    const open = p === '/vitrine.html' || p === '/manifest.webmanifest' || p === '/favicon.ico' || p === '/icon.svg' || p.startsWith('/icons/') || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
     if (!PASSWORD && process.env.RENDER && !open) {
       res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Defina APP_PASSWORD no painel do Render para liberar o editor.');
