@@ -264,6 +264,7 @@ details[open] summary::after{content:"–"}
     <label>Cidade / bairro para retirada<input id="cf-cid" type="text" placeholder="Ex.: Campinas - SP" autocomplete="off"></label>
     <p class="note">O número aparece no botão “Tenho interesse” da vitrine e nas legendas. Só o que estiver como “Disponível” fica público.</p>
     <a class="btn sec" href="vitrine.html" target="_blank" rel="noopener">Abrir vitrine pública</a>
+    <button class="btn danger" id="cf-out" type="button">Sair deste aparelho</button>
   </div>
   <div class="sf"><button class="btn grow" id="cf-save" type="button">Salvar</button></div>
 </dialog>
@@ -279,7 +280,7 @@ const TAGS={'Móveis':'#moveis #decoracao','Brinquedos':'#brinquedos #infantil',
 const R$=v=>(v==null||v===''||isNaN(v))?'':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const thumb=n=>n.replace('.jpg','.t.jpg');
-const api=async(u,o={})=>{const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Erro de conexão');return j};
+const api=async(u,o={})=>{const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});if(r.status===401){location.href='/login';throw new Error('Sessão expirada')}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Erro de conexão');return j};
 let items=[],cur=null,uploading=0,cfg={nome:'Desapego da Nara',whatsapp:'',cidade:''},F={q:'',cat:'',st:''};
 let shareFiles={card:null,fotos:[]};
 
@@ -501,6 +502,8 @@ $('#btn-cfg').onclick=()=>{$('#cf-nome').value=cfg.nome||'';$('#cf-wa').value=cf
 $('#cf-save').onclick=async()=>{
   try{cfg=await api('/api/config',{method:'PUT',body:JSON.stringify({nome:$('#cf-nome').value.trim(),whatsapp:$('#cf-wa').value,cidade:$('#cf-cid').value.trim()})});applyCfg();$('#cf').close();toast('Configurações salvas')}catch(e){toast(e.message)}
 };
+
+$('#cf-out').onclick=async()=>{try{await fetch('/api/logout',{method:'POST'})}catch{}location.href='/login'};
 
 /* fechar modais: botoes e clique fora (alternativa para navegadores sem closedby) */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)b.closest('dialog').close()});

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161412" media="(prefers-color-scheme: dark)">
+<title>Entrar · Desapego da Nara</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Desapego">
+<style>
+:root{
+  --bg:#faf8f5;--surface:#fff;--text:#1d1a17;--muted:#6f665d;--line:#e2dbd2;
+  --accent:#c2410c;--accent-ink:#fff;--danger:#c92a2a;
+  color-scheme:light dark;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  accent-color:var(--accent);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#161412;--surface:#1f1c19;--text:#f3eee8;--muted:#a39a90;--line:#3a342e;--accent:#ff8a4c;--accent-ink:#1a0e05;--danger:#ff8787}
+}
+*{box-sizing:border-box}
+html,body{min-block-size:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-size:16px;line-height:1.4;display:grid;place-items:center;min-block-size:100vh;min-block-size:100dvh;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
+main{inline-size:100%;max-inline-size:360px;text-align:center}
+.logo{inline-size:84px;block-size:84px;border-radius:24px;box-shadow:0 10px 30px rgb(194 65 12/.25)}
+h1{font-size:26px;letter-spacing:-.02em;margin:20px 0 6px;text-wrap:balance}
+p.sub{margin:0 0 28px;color:var(--muted);text-wrap:balance}
+form{display:flex;flex-direction:column;gap:12px;text-align:left}
+.field{position:relative}
+input[type=password],input[type=text]{inline-size:100%;min-block-size:54px;padding:0 54px 0 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);font:inherit;font-size:17px}
+input:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+.eye{position:absolute;inset-block:0;inset-inline-end:4px;inline-size:48px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);border-radius:12px;cursor:pointer}
+.eye svg{inline-size:22px;block-size:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn{min-block-size:54px;border:0;border-radius:14px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:650;font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px}
+.btn[disabled]{opacity:.7;cursor:progress}
+.err{min-block-size:22px;margin:0;color:var(--danger);font-size:14px;text-align:center}
+.spin{inline-size:18px;block-size:18px;border:3px solid color-mix(in srgb,var(--accent-ink) 35%,transparent);border-top-color:var(--accent-ink);border-radius:50%;animation:s .8s linear infinite}
+@keyframes s{to{rotate:1turn}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.5s}}
+.foot{margin-top:22px;font-size:13px;color:var(--muted)}
+.foot a{color:var(--accent)}
+.sr{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)}
+</style>
+</head>
+<body>
+<main>
+  <img class="logo" src="/icon.svg" alt="" width="84" height="84">
+  <h1>Desapego da Nara</h1>
+  <p class="sub">Digite a senha para entrar. Neste aparelho, você fica conectado por 90 dias.</p>
+  <form id="f" method="post" action="/api/login" autocomplete="on">
+    <input class="sr" type="text" name="username" value="desapego" autocomplete="username" tabindex="-1" aria-hidden="true">
+    <div class="field">
+      <label class="sr" for="senha">Senha</label>
+      <input id="senha" name="senha" type="password" placeholder="Senha" autocomplete="current-password" enterkeyhint="go" autocapitalize="off" autocorrect="off" spellcheck="false" required autofocus>
+      <button class="eye" id="eye" type="button" aria-label="Mostrar senha" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.600-6 10-6 10 6 10 6-3.600 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+    <button class="btn" id="go" type="submit">Entrar</button>
+  </form>
+  <p class="foot">Quer só olhar os itens à venda? <a href="/vitrine.html">Abrir a vitrine</a></p>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const f=$('#f'),senha=$('#senha'),err=$('#err'),go=$('#go');
+$('#eye').onclick=e=>{const show=senha.type==='password';senha.type=show?'text':'password';e.currentTarget.setAttribute('aria-pressed',show);e.currentTarget.setAttribute('aria-label',show?'Ocultar senha':'Mostrar senha');senha.focus()};
+f.addEventListener('submit',async e=>{
+  e.preventDefault();
+  err.textContent='';go.disabled=true;go.innerHTML='<span class="spin"></span>Entrando…';
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({senha:senha.value})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||'Não foi possível entrar');
+    location.replace('/');
+  }catch(x){
+    err.textContent=x.message==='Failed to fetch'?'Sem conexão. Tente de novo.':x.message;
+    go.disabled=false;go.textContent='Entrar';senha.select();
+  }
+});
+</script>
+</body>
+</html>

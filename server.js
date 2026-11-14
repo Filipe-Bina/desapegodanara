@@ -17,6 +17,25 @@ const ROOT = __dirname;
 const PUB = path.join(ROOT, 'public');
 const DATA = process.env.DATA_DIR || path.join(ROOT, 'data');
 const PASSWORD = process.env.APP_PASSWORD || '';
+
+// sessão: cookie assinado (expiração + HMAC). Trocar a senha encerra todas as sessões.
+const SECRET = process.env.SESSION_SECRET || crypto.createHash('sha256').update('desapego:' + PASSWORD).digest('hex');
+const SESSION_DAYS = 90;
+const sign = (exp) => crypto.createHmac('sha256', SECRET).update(String(exp)).digest('hex');
+const sameStr = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+function cookiesOf(req) {
+  const o = {};
+  for (const part of (req.headers.cookie || '').split(';')) { const i = part.indexOf('='); if (i > 0) o[part.slice(0, i).trim()] = part.slice(i + 1).trim(); }
+  return o;
+}
+function authorized(req) {
+  const c = cookiesOf(req).sess;
+  if (c) { const [exp, sig] = c.split('.'); if (exp && sig && Number(exp) > Date.now() && sameStr(sig, sign(exp))) return true; }
+  // aceita também senha básica (útil para testes com curl)
+  const got = Buffer.from((req.headers.authorization || '').split(' ')[1] || '', 'base64').toString().split(':').slice(1).join(':');
+  return !!got && sameStr(got, PASSWORD);
+}
+const fails = new Map();
 const IMGS = path.join(DATA, 'images');
 const DB = path.join(DATA, 'items.json');
 fs.mkdirSync(IMGS, { recursive: true });
@@ -187,15 +206,41 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
   try {
-    const open = p === '/vitrine.html' || p === '/manifest.webmanifest' || p === '/favicon.ico' || p === '/icon.svg' || p.startsWith('/icons/') || p === '/api/public' || p.startsWith('/img/') || p === '/healthz';
+    const open = p === '/vitrine.html' || p === '/manifest.webmanifest' || p === '/favicon.ico' || p === '/icon.svg' || p.startsWith('/icons/') || p === '/api/public' || p.startsWith('/img/') || p === '/healthz' || p === '/login' || p === '/api/login' || p === '/api/logout';
     if (!PASSWORD && process.env.RENDER && !open) {
       res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Defina APP_PASSWORD no painel do Render para liberar o editor.');
     }
-    if (PASSWORD && !open) {
-      const got = Buffer.from((req.headers.authorization || '').split(' ')[1] || '', 'base64').toString().split(':').slice(1).join(':');
-      const a = Buffer.from(got), b = Buffer.from(PASSWORD);
-      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Desapego"' }); return res.end('Senha necessaria'); }
+    if (PASSWORD && !open && !authorized(req)) {
+      if (p.startsWith('/api/')) return send(res, 401, { error: 'Sessão expirada. Entre de novo.' });
+      res.writeHead(302, { Location: '/login' });
+      return res.end();
+    }
+    if (p === '/login') {
+      if (!PASSWORD || authorized(req)) { res.writeHead(302, { Location: '/' }); return res.end(); }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      return fs.createReadStream(path.join(PUB, 'login.html')).pipe(res);
+    }
+    if (p === '/api/login' && req.method === 'POST') {
+      const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+      const f = fails.get(ip);
+      const cnt = f && Date.now() - f.t < 600e3 ? f.n : 0;
+      if (cnt >= 8) return send(res, 429, { error: 'Muitas tentativas. Espere alguns minutos.' });
+      const { senha } = await body(req, 1e4);
+      if (!PASSWORD || !sameStr(senha || '', PASSWORD)) {
+        fails.set(ip, { n: cnt + 1, t: Date.now() });
+        await new Promise((r) => setTimeout(r, 500));
+        return send(res, 401, { error: 'Senha incorreta' });
+      }
+      fails.delete(ip);
+      const exp = Date.now() + SESSION_DAYS * 864e5;
+      const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+      res.setHeader('Set-Cookie', `sess=${exp}.${sign(exp)}; Path=/; Max-Age=${SESSION_DAYS * 86400}; HttpOnly; SameSite=Lax${secure}`);
+      return send(res, 200, { ok: 1 });
+    }
+    if (p === '/api/logout' && req.method === 'POST') {
+      res.setHeader('Set-Cookie', 'sess=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax');
+      return send(res, 200, { ok: 1 });
     }
     if (p === '/healthz') return send(res, 200, { ok: 1 });
     if (p === '/api/public') {
